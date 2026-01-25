@@ -41,7 +41,7 @@ class CalendarClient:
             print(f"[CalendarClient] Debug - Available Env Vars: {list(os.environ.keys())}")
             if json_content: # If we HAD env var but parsing failed
                  raise RuntimeError("Failed to load credentials from BOTH env var and local file.")
-            raise FileNotFoundError(f"Service account key not found at {json_path} and GOOGLE_SERVICE_ACCOUNT_JSON is missing.")
+            raise FileNotFoundError(f"[DEPLOYMENT_TEST_V2] Key not found at {json_path} and GOOGLE_SERVICE_ACCOUNT_JSON is missing.")
             
         return service_account.Credentials.from_service_account_file(
             json_path, scopes=self.scopes)
