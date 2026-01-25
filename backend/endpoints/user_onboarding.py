@@ -20,6 +20,7 @@ from crud.user_details import verify_user, register_user
 from tools.google_calendar.calendar_client import calendar_client
 
 router = APIRouter()
+print("[onboarding] Loading Onboarding Router - Version: DEPLOY_V3_CLEAN")
 
 # -----------------------------------------------------------------------------
 # SCHEMAS (Local or imported, keeping it simple as requested)
