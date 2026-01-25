@@ -14,25 +14,38 @@ class CalendarClient:
     def _load_credentials(self):
         # 1. Try loading from a JSON environment variable (preferred for Render)
         json_content = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
+        
         if json_content:
             try:
-                print("[CalendarClient] Loading credentials from GOOGLE_SERVICE_ACCOUNT_JSON")
+                print("[CalendarClient] FOUND GOOGLE_SERVICE_ACCOUNT_JSON env var. Attempting to parse...")
                 info = json.loads(json_content)
                 return service_account.Credentials.from_service_account_info(
                     info, scopes=self.scopes)
             except Exception as e:
-                print(f"[CalendarClient] Error parsing GOOGLE_SERVICE_ACCOUNT_JSON: {e}")
+                print(f"[CalendarClient] ERROR parsing GOOGLE_SERVICE_ACCOUNT_JSON: {e}")
+        else:
+            print("[CalendarClient] WARNING: GOOGLE_SERVICE_ACCOUNT_JSON env var is NOT set or EMPTY.")
 
         # 2. Fallback to local file for development
         key_filename = os.getenv("GOOGLE_SERVICE_ACCOUNT_KEY", "brain-dump-484011-7dc82cec457d.json")
-        current_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        json_path = os.path.join(current_dir, key_filename)
+        
+        # Look for the file in the same directory as this script, or the backend root
+        current_dir = os.path.dirname(os.path.abspath(__file__)) # tools/google_calendar
+        backend_dir = os.path.dirname(os.path.dirname(current_dir)) # backend root
+        json_path = os.path.join(backend_dir, key_filename)
+        
+        print(f"[CalendarClient] Attempting fallback to local file: {json_path}")
         
         if not os.path.exists(json_path):
-            raise FileNotFoundError(f"Service account key not found at {json_path}")
+            # Debug: Print which env vars ARE present (just keys)
+            print(f"[CalendarClient] Debug - Available Env Vars: {list(os.environ.keys())}")
+            if json_content: # If we HAD env var but parsing failed
+                 raise RuntimeError("Failed to load credentials from BOTH env var and local file.")
+            raise FileNotFoundError(f"Service account key not found at {json_path} and GOOGLE_SERVICE_ACCOUNT_JSON is missing.")
             
         return service_account.Credentials.from_service_account_file(
             json_path, scopes=self.scopes)
+
 
     def verify_access(self, calendar_id: str) -> bool:
         """
