@@ -13,7 +13,8 @@ class CalendarClient:
 
     def _load_credentials(self):
         # 1. Try loading from a JSON environment variable (preferred for Render)
-        json_content = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
+        # Check both naming conventions to be safe (Render has _KEY_ in it)
+        json_content = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON") or os.getenv("GOOGLE_SERVICE_ACCOUNT_KEY_JSON")
         
         if json_content:
             try:
