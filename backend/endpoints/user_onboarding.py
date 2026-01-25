@@ -32,7 +32,14 @@ class VerifyUserResponse(BaseModel):
     status: str
     phone: str = None
 
-# ... (other classes)
+class RegisterCompleteRequest(BaseModel):
+    user_id: str
+    phone: str
+    email: str
+    calendar_enabled: bool
+
+class RegisterCompleteResponse(BaseModel):
+    status: str
 
 @router.get("/verify-user", response_model=VerifyUserResponse)
 @router.post("/verify-user", response_model=VerifyUserResponse)
