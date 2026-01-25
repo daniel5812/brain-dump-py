@@ -64,13 +64,13 @@ async def brain_dump(request: BrainDumpRequest):
     Raises:
         HTTPException 401: If user is not verified
     """
-    # Step 1: Verify user FIRST (security gate)
-    # -------------------------------------------------------------------------
-    if not verify_user(request.user_id):
-        print(f"[endpoint] User verification failed for: {request.user_id} -> Asking for registration")
-        
-        # Step 5: Graceful onboard flow
-        # Instead of 401 error, we return specific status so Shortcut can prompt user
+    # Step 1: Resolve Identity (TECHNICAL ID -> PHONE NUMBER)
+    from crud.user_details import get_user_by_device
+    
+    user_record = get_user_by_device(request.user_id)
+    
+    if not user_record or not user_record.get("calendar_enabled", False):
+        print(f"[endpoint] Device unrecognized or not ready: {request.user_id} -> Asking for registration")
         return BrainDumpResponse(
             success=False,
             message="I need to know who you are to help you. Please provide your details.",
@@ -78,17 +78,18 @@ async def brain_dump(request: BrainDumpRequest):
             action_taken=None
         )
     
+    # The real User ID for the rest of the flow is the Phone Number
+    real_user_id = user_record["user_id"]
+
     # Step 2: Provide time context for the agent (relative dates like 'tomorrow')
     import os
     from datetime import datetime
     os.environ["CURRENT_TIME_CONTEXT"] = datetime.now().isoformat()
 
-    # Step 3: Call the brain dump flow
-    # ALL business logic happens inside this function
-    # The endpoint knows NOTHING about intents, actions, etc.
+    # Step 3: Call the brain dump flow with the REAL (Phone) user_id
     result = brain_dump_flow(
         text=request.text,
-        user_id=request.user_id
+        user_id=real_user_id
     )
     
     # Step 3: Return the response

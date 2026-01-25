@@ -23,59 +23,58 @@ FUTURE ENHANCEMENTS:
 from typing import Optional, Dict
 from tools.database.supabase_client import supabase
 
-def verify_user(user_id: str) -> bool:
+def verify_user(device_id: str) -> bool:
     """
-    Verify that the user is registered in Supabase.
+    Verify that the DEVICE is registered to a user with calendar enabled.
     """
-    if not supabase:
-        print("[user_details] ERROR: Supabase not connected")
-        return False
+    if not supabase: return False
 
     try:
-        response = supabase.table("users").select("calendar_enabled").eq("user_id", user_id).execute()
+        response = supabase.table("users").select("calendar_enabled").eq("device_id", device_id).execute()
         if response.data and len(response.data) > 0:
-            is_calendar_ready = response.data[0].get("calendar_enabled", False)
-            status = "READY" if is_calendar_ready else "NOT_READY"
-            print(f"[user_details] Supabase Verify '{user_id}': {status}")
-            return is_calendar_ready
-        
-        print(f"[user_details] Supabase Verify '{user_id}': NOT_FOUND")
+            return response.data[0].get("calendar_enabled", False)
         return False
-    except Exception as e:
-        print(f"[user_details] Supabase Error during verify: {e}")
+    except:
         return False
 
 
 def register_user(user_data: dict) -> dict:
     """
-    Register or update a user in Supabase.
+    Register or update a user record.
+    user_id = Phone Number
+    device_id = Technical ID from Shortcut
     """
     if not supabase:
         raise Exception("Supabase client not initialized")
 
-    user_id = user_data["user_id"]
-    is_calendar = user_data.get('calendar_enabled', False)
-    
-    # Prepare record
+    # Map the incoming data to our schema: user_id IS the phone
     record = {
-        "user_id": user_id,
-        "name": user_data.get("name", user_id),
+        "user_id": user_data["phone"], 
+        "device_id": user_data["user_id"], # The technical ID sent from Shortcut
         "email": user_data.get("email"),
-        "calendar_enabled": is_calendar
+        "calendar_enabled": user_data.get("calendar_enabled", False)
     }
 
     try:
-        print(f"[user_details] Upserting user to Supabase: {user_id}")
-        # Perform upsert (insert or update on conflict)
+        print(f"[user_details] Upserting Phone Identity: {record['user_id']} for Device: {record['device_id']}")
         response = supabase.table("users").upsert(record).execute()
         return response.data[0] if response.data else record
     except Exception as e:
-        print(f"[user_details] Supabase Error during register: {e}")
+        print(f"[user_details] Supabase Error: {e}")
         return record
 
 
+def get_user_by_device(device_id: str) -> Optional[dict]:
+    """Resolve the technical Device ID to a full User (Phone) record."""
+    if not supabase: return None
+    try:
+        response = supabase.table("users").select("*").eq("device_id", device_id).execute()
+        return response.data[0] if response.data else None
+    except:
+        return None
+
 def get_user(user_id: str) -> Optional[dict]:
-    """Retrieve user details from Supabase."""
+    """Retrieve user details by Phone Number."""
     if not supabase: return None
     try:
         response = supabase.table("users").select("*").eq("user_id", user_id).execute()

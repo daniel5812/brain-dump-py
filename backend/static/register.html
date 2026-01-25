@@ -105,7 +105,7 @@
 
     <script>
         const urlParams = new URLSearchParams(window.location.search);
-        const urlUserId = urlParams.get('user_id');
+        const technicalUserId = urlParams.get('user_id'); // From Shortcut (Device ID)
 
         const step1 = document.getElementById('step-1');
         const step2 = document.getElementById('step-2');
@@ -116,11 +116,6 @@
         const doneBtn = document.getElementById('done-btn');
         const statusMsg = document.getElementById('status-message');
         const serviceEmailBox = document.getElementById('service-email');
-
-        // Pre-fill phone if in URL
-        if (urlUserId) {
-            phoneInput.value = urlUserId;
-        }
 
         // Copy service email
         serviceEmailBox.addEventListener('click', () => {
@@ -133,6 +128,11 @@
 
         // Step transition
         nextBtn.addEventListener('click', () => {
+            if (!technicalUserId) {
+                statusMsg.innerText = "⚠️ Missing User ID from Shortcut. Please open the link again from your iPhone.";
+                statusMsg.style.color = "#ef4444";
+                return;
+            }
             if (!phoneInput.value.trim() || !emailInput.value.trim()) {
                 statusMsg.innerText = "⚠️ Please fill in both fields.";
                 statusMsg.style.color = "#fbbf24";
@@ -145,7 +145,7 @@
 
         // Final verification
         doneBtn.addEventListener('click', async () => {
-            const userId = phoneInput.value.trim();
+            const phone = phoneInput.value.trim();
             const email = emailInput.value.trim();
 
             doneBtn.disabled = true;
@@ -154,12 +154,13 @@
             statusMsg.style.color = "#3b82f6";
 
             try {
-                const response = await fetch('/register/complete', {
+                const response = await fetch('/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        user_id: userId,
-                        email: email,
+                        user_id: technicalUserId, // Technical Device ID
+                        phone: phone,             // Manual Phone Number
+                        email: email,             // Manual Email
                         calendar_enabled: true
                     })
                 });
@@ -167,11 +168,14 @@
                 if (response.ok) {
                     document.querySelector('.container').innerHTML = `
                         <div class="success-icon">🎉</div>
-                        <h1>You're Ready!</h1>
-                        <p class="subtitle">Setup Complete</p>
+                        <h1>Registration Complete!</h1>
+                        <p class="subtitle">Your Identity is Connected</p>
                         <div class="card" style="text-align: center;">
-                            <p>Access verified for <b>${userId}</b>.</p>
-                            <p style="font-size: 0.9rem; color: #94a3b8; margin-top: 1rem;">You can now close this page and run the shortcut again.</p>
+                            <p>Phone: <b>${phone}</b></p>
+                            <p>Technical ID: <span style="font-size: 0.8rem; color: #94a3b8;">${technicalUserId}</span></p>
+                            <p style="font-size: 0.9rem; color: #34d399; margin-top: 1.5rem; font-weight: 500;">
+                                You can now close this page and run the shortcut!
+                            </p>
                         </div>
                     `;
                 } else {
