@@ -47,6 +47,14 @@ app.mount("/static", StaticFiles(directory=static_dir), name="static")
 # Health check - no prefix, available at /health
 app.include_router(health_router, tags=["System"])
 
+@app.get("/", tags=["System"])
+async def root():
+    return {
+        "message": "Brain Dump API is running!",
+        "onboarding": "/register?user_id=YOUR_DEVICE_ID",
+        "status": "Healthy"
+    }
+
 # Onboarding (verify, register) - Root level routes
 app.include_router(onboarding_router, tags=["Onboarding"])
 
