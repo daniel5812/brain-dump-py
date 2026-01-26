@@ -69,16 +69,18 @@ async def brain_dump(
         final_text = form_data.get("text", final_text)
         final_user_id = form_data.get("user_id", final_user_id)
 
-    # 2. VALIDATION
-    if not final_text or not final_user_id:
-        print(f"[endpoint] 422 ERROR: Missing text or user_id. Received: text={final_text}, user_id={final_user_id}")
+    # 2. VALIDATION (Be specific to allow '0' as a value)
+    if final_text is None or final_text == "" or final_user_id is None or final_user_id == "":
+        print(f"[endpoint] VALIDATION FAILED: text='{final_text}', user_id='{final_user_id}' (Type: {type(final_user_id)})")
         return BrainDumpResponse(
             success=False,
             message="Missing required fields: 'text' or 'user_id'. Please check your Shortcut configuration.",
             status="FAILED_VALIDATION"
         )
 
-    print(f"[endpoint] Processing request from: {final_user_id} | Source: {request.method}")
+    # Ensure user_id is a string for database lookups
+    final_user_id = str(final_user_id)
+    print(f"[endpoint] Processing request: user='{final_user_id}', text='{final_text[:20]}...' | Method: {request.method}")
 
     # Step 1: Resolve Identity (TECHNICAL ID -> PHONE NUMBER)
     from crud.user_details import get_user_by_device
