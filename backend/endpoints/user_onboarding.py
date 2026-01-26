@@ -72,22 +72,31 @@ async def verify_user_endpoint(request: Request = None, data: VerifyUserRequest 
 
 
 @router.get("/register", response_class=HTMLResponse)
-async def get_register_page():
+async def get_register_page(request: Request):
     """
     GET /register
     Serves the registration HTML page.
     """
-    # Assuming execution from backend/ root or consistent path
-    # We'll use absolute path logic to find static/register.html
+    # Robust path resolution for Render/Local
+    # We look for static/register.html relative to the root or this file
+    possible_paths = [
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static", "register.html"),
+        os.path.join(os.getcwd(), "static", "register.html"),
+        os.path.join(os.getcwd(), "backend", "static", "register.html"),
+    ]
     
-    current_dir = os.path.dirname(os.path.abspath(__file__)) # endpoints/
-    backend_dir = os.path.dirname(current_dir) # backend/
-    static_file = os.path.join(backend_dir, "static", "register.html")
-    
-    if os.path.exists(static_file):
+    static_file = None
+    for path in possible_paths:
+        if os.path.exists(path):
+            static_file = path
+            break
+            
+    if static_file:
+        print(f"[onboarding] Serving register page from: {static_file}")
         with open(static_file, 'r', encoding='utf-8') as f:
             return HTMLResponse(content=f.read())
     else:
+        print(f"[onboarding] ERROR: Register page NOT FOUND. Searched in: {possible_paths}")
         return HTMLResponse(content="<h1>Error: Register page not found</h1>", status_code=404)
 
 

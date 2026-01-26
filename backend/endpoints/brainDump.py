@@ -23,12 +23,13 @@ STRICT RESPONSIBILITIES:
 ❌ NO database knowledge
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request, Body, Query
+from typing import Optional
 
 # Import our Pydantic models
 from schema.brain_dump import BrainDumpRequest, BrainDumpResponse
 
-# Import business logic from their proper homes (Step 2: Clean Separation)
+# Import business logic
 from crud.user_details import verify_user
 from tools.business_logic.brain_dump_flow import brain_dump_flow
 
@@ -38,42 +39,57 @@ router = APIRouter()
 
 # =============================================================================
 # ENDPOINT
-# =============================================================================
-
 @router.post("/brain-dump", response_model=BrainDumpResponse)
-async def brain_dump(request: BrainDumpRequest):
+@router.get("/brain-dump", response_model=BrainDumpResponse) # Also support GET for easier testing
+async def brain_dump(
+    request: Request,
+    body: Optional[dict] = Body(None),
+    text: Optional[str] = Query(None),
+    user_id: Optional[str] = Query(None)
+):
     """
-    Main Brain Dump endpoint.
-    
-    Receives transcribed voice from iPhone Shortcut,
-    processes it through the brain dump flow,
-    and returns feedback.
-    
-    The flow:
-    1. Input is validated automatically by Pydantic
-    2. User is verified (MUST happen before any processing)
-    3. brain_dump_flow handles all the logic
-    4. Response is returned
-    
-    Args:
-        request: BrainDumpRequest with text and user_id
-        
-    Returns:
-        BrainDumpResponse with success status and feedback
-        
-    Raises:
-        HTTPException 401: If user is not verified
+    Flexible Brain Dump endpoint.
+    Handles data from JSON body, Form data, or Query params.
     """
+    # 1. TRIPLE FALLBACK LOGIC
+    final_text = text
+    final_user_id = user_id
+
+    # If body exists (JSON), use it
+    if body:
+        final_text = body.get("text", final_text)
+        final_user_id = body.get("user_id", final_user_id)
+        # Handle common naming variations in Shortcuts
+        final_user_id = body.get("userId", final_user_id)
+        final_user_id = body.get("TechnicalID", final_user_id)
+
+    # If still missing, check Form data
+    if not final_text or not final_user_id:
+        form_data = await request.form()
+        final_text = form_data.get("text", final_text)
+        final_user_id = form_data.get("user_id", final_user_id)
+
+    # 2. VALIDATION
+    if not final_text or not final_user_id:
+        print(f"[endpoint] 422 ERROR: Missing text or user_id. Received: text={final_text}, user_id={final_user_id}")
+        return BrainDumpResponse(
+            success=False,
+            message="Missing required fields: 'text' or 'user_id'. Please check your Shortcut configuration.",
+            status="FAILED_VALIDATION"
+        )
+
+    print(f"[endpoint] Processing request from: {final_user_id} | Source: {request.method}")
+
     # Step 1: Resolve Identity (TECHNICAL ID -> PHONE NUMBER)
     from crud.user_details import get_user_by_device
     
-    user_record = get_user_by_device(request.user_id)
+    user_record = get_user_by_device(final_user_id)
     
     if not user_record or not user_record.get("calendar_enabled", False):
-        print(f"[endpoint] Device unrecognized or not ready: {request.user_id} -> Asking for registration")
+        print(f"[endpoint] Device unrecognized or not ready: {final_user_id} -> Asking for registration")
         return BrainDumpResponse(
             success=False,
-            message="I need to know who you are to help you. Please provide your details.",
+            message="I need to know who you are to help you. Click below to register.",
             status="NEEDS_REGISTRATION",
             action_taken=None
         )
@@ -81,19 +97,17 @@ async def brain_dump(request: BrainDumpRequest):
     # The real User ID for the rest of the flow is the Phone Number
     real_user_id = user_record["user_id"]
 
-    # Step 2: Provide time context for the agent (relative dates like 'tomorrow')
+    # Step 2: Provide time context
     import os
     from datetime import datetime
     os.environ["CURRENT_TIME_CONTEXT"] = datetime.now().isoformat()
 
-    # Step 3: Call the brain dump flow with the REAL (Phone) user_id
+    # Step 3: Call the brain dump flow
     result = brain_dump_flow(
-        text=request.text,
+        text=final_text,
         user_id=real_user_id
     )
     
-    # Step 3: Return the response
-    # Just passing through what the flow returned
     return BrainDumpResponse(
         success=result["success"],
         message=result["message"],
