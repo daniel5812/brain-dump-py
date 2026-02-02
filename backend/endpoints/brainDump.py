@@ -87,11 +87,12 @@ async def brain_dump(
     
     # SPECIAL DEBUG: If user_id is "0", it means the Shortcut is passing a null 'phone' from a failed verification.
     if final_user_id == "0":
-        print(f"[endpoint] WARNING: Received user_id='0'. Shortcut is likely passing a null verification result.")
+        print(f"[endpoint] WARNING: Received user_id='0'. Shortcut mapping error.")
         return BrainDumpResponse(
             success=False,
-            message="Shortcut Error: Your ID is '0'. In your Shortcut, make sure to send your Technical ID (like 'Daniel_iPhone'), not the 'phone' result from the verification step if it failed.",
-            status="NEEDS_REGISTRATION"
+            message="שגיאה בקיצור הדרך: ה-user_id שהתקבל הוא '0'. בקיצור הדרך שלך, בשלב של שליחת ה-Brain Dump, וודא שאתה שולח את המשתנה TechnicalID ולא את תוצאת האימות.",
+            status="NEEDS_REGISTRATION",
+            registration_url=f"https://brain-dump-py.onrender.com/register?user_id=Daniel_iPhone" # Fallback if they still need it
         )
 
     user_record = get_user_by_device(final_user_id)
