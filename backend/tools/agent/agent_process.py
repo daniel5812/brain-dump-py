@@ -44,6 +44,10 @@ These are the ONLY valid intents in the system.
 This is the shared language between all components.
 """
 
+import os
+import re
+from typing import Optional, Dict
+
 # Intent categories - closed set, do not add without architectural review
 VALID_INTENTS = {
     "task",      # User wants to add a todo/task (e.g., "add milk to shopping list")
@@ -115,7 +119,7 @@ def process_text(text: str) -> dict:
         response = client.chat.completions.create(
             model="gpt-4o-mini",  # Good balance of cost/speed/quality
             messages=[
-                {"role": "system", "content": "You are an intent classification assistant. Analyze user messages and classify their intent."},
+                {"role": "system", "content": "You are an assistant for 'Brain Dump'. You help users capture tasks, events, and notes. You MUST support both Hebrew and English. If the user speaks Hebrew, analyze the intent correctly in Hebrew."},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.3,  # Low temperature for consistent classification
@@ -166,6 +170,7 @@ Intents:
 - unknown: Cannot determine clear intent
 
 User message: "{text}"
+Language Note: The user may speak Hebrew, English, or both. Transliterate or translate entities if necessary, but keep the core meaning. If it's an event, analyze the Hebrew temporal expressions (e.g. 'מחר' = tomorrow).
 Current Local Time: {os.getenv("CURRENT_TIME_CONTEXT", "2026-01-25T21:30:00")}
 
 Respond in this EXACT format:

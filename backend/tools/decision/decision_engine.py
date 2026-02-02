@@ -114,7 +114,7 @@ def decide(intent_result: dict, user_id: str) -> dict:
         return {
             "status": STATUS_SYSTEM_ERROR,
             "actions": [],
-            "feedback": "Sorry, something went wrong while processing your request.",
+            "feedback": "Sorry, something went wrong. / סליחה, משהו השתבש בעיבוד הבקשה.",
             "debug": {"error": str(e)}
         }
 
@@ -153,7 +153,7 @@ def _decide_task(text: str, entities: dict, user_id: str, confidence: float) -> 
         return {
             "status": STATUS_SUCCESS,
             "actions": [action],
-            "feedback": f"I'll add this task for you: '{text}'",
+            "feedback": f"I'll add this task for you: '{text}' / הוספתי את המשימה: '{text}'",
             "debug": {"intent": "task", "confidence": confidence}
         }
     else:
@@ -161,7 +161,7 @@ def _decide_task(text: str, entities: dict, user_id: str, confidence: float) -> 
         return {
             "status": STATUS_FAILED_VALIDATION,
             "actions": [],
-            "feedback": "I understand you want to add a task, but what should the task be?",
+            "feedback": "I understand you want to add a task, but what should the task be? / הבנתי שרצית להוסיף משימה, אבל מה המשימה?",
             "debug": {"intent": "task", "confidence": confidence, "reason": "missing_task_info"}
         }
 
@@ -198,7 +198,7 @@ def _decide_event(text: str, entities: dict, user_id: str, confidence: float) ->
         return {
             "status": STATUS_SUCCESS,
             "actions": [action],
-            "feedback": f"I'll schedule this event for you: '{text}'",
+            "feedback": f"I'll schedule this event for you: '{text}' / קבעתי לך את האירוע: '{text}'",
             "debug": {"intent": "event", "confidence": confidence}
         }
     else:
@@ -206,7 +206,7 @@ def _decide_event(text: str, entities: dict, user_id: str, confidence: float) ->
         return {
             "status": STATUS_NEEDS_CLARIFICATION,
             "actions": [],
-            "feedback": f"I understand you want to schedule '{text}', but when should it be?",
+            "feedback": f"I understand you want to schedule '{text}', but when should it be? / הבנתי שאתה רוצה לקבוע את '{text}', אבל מתי?",
             "debug": {"intent": "event", "confidence": confidence, "reason": "missing_time"}
         }
 
@@ -242,7 +242,7 @@ def _decide_reminder(text: str, entities: dict, user_id: str, confidence: float)
         return {
             "status": STATUS_SUCCESS,
             "actions": [action],
-            "feedback": f"I'll remind you: '{text}'",
+            "feedback": f"I'll remind you: '{text}' / אזכיר לך: '{text}'",
             "debug": {"intent": "reminder", "confidence": confidence}
         }
     else:
@@ -250,7 +250,7 @@ def _decide_reminder(text: str, entities: dict, user_id: str, confidence: float)
         return {
             "status": STATUS_NEEDS_CLARIFICATION,
             "actions": [],
-            "feedback": f"I understand you want a reminder about '{text}', but when should I remind you?",
+            "feedback": f"I understand you want a reminder about '{text}', but when should I remind you? / הבנתי שאתה רוצה תזכורת לגבי '{text}', אבל מתי להזכיר לך?",
             "debug": {"intent": "reminder", "confidence": confidence, "reason": "missing_time"}
         }
 
@@ -273,7 +273,7 @@ def _decide_note(text: str, entities: dict, user_id: str, confidence: float) -> 
     return {
         "status": STATUS_SUCCESS,
         "actions": [action],
-        "feedback": f"I'll save this note for you: '{text}'",
+        "feedback": f"I'll save this note for you: '{text}' / שמרתי לך את הפתק: '{text}'",
         "debug": {"intent": "note", "confidence": confidence}
     }
 
@@ -288,8 +288,8 @@ def _decide_question(text: str, entities: dict, user_id: str, confidence: float)
     """
     return {
         "status": STATUS_SUCCESS,
-        "actions": [],  # No actions for questions yet
-        "feedback": "I understand you have a question, but question handling is not implemented yet. For now, I can help you with tasks, events, reminders, and notes.",
+        "actions": [action],
+        "feedback": "I understand you have a question, but question handling is not implemented yet. / הבנתי שיש לך שאלה, אבל עדיין אין לי אפשרות לענות על שאלות. בינתיים אני יכול לעזור עם משימות ואירועים.",
         "debug": {"intent": "question", "confidence": confidence, "reason": "not_implemented"}
     }
 
@@ -304,6 +304,6 @@ def _decide_unknown(text: str, entities: dict, user_id: str, confidence: float) 
     return {
         "status": STATUS_NEEDS_CLARIFICATION,
         "actions": [],
-        "feedback": "I didn't quite understand that. Could you rephrase? I can help you create tasks, schedule events, set reminders, or save notes.",
+        "feedback": "I didn't quite understand that. Could you rephrase? / לא לגמרי הבנתי אותך, אפשר לנסח מחדש? אני יכול לעזור לקבוע פגישות או לשמור משימות.",
         "debug": {"intent": "unknown", "confidence": confidence, "reason": "unclear_intent"}
     }
