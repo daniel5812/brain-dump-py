@@ -144,9 +144,10 @@ def _decide_task(text: str, entities: dict, user_id: str, confidence: float) -> 
         action = {
             "type": ACTION_CREATE_TASK,
             "payload": {
-                "title": text,
+                "title": entities.get("title") or entities.get("item") or text,
                 "entities_raw": entities.get("raw", ""),
-                "user_id": user_id
+                "user_id": user_id,
+                **entities # Pass all extracted entities
             }
         }
         
@@ -181,7 +182,8 @@ def _decide_event(text: str, entities: dict, user_id: str, confidence: float) ->
         "date=" in entity_raw or
         entities.get("time") or 
         entities.get("date") or
-        entities.get("when")
+        entities.get("when") or
+        entities.get("start_iso") # Add support for our new ISO format
     )
     
     if has_time_info:
@@ -189,9 +191,10 @@ def _decide_event(text: str, entities: dict, user_id: str, confidence: float) ->
         action = {
             "type": ACTION_CREATE_EVENT,
             "payload": {
-                "title": text,
-                "when_raw": entity_raw,
-                "user_id": user_id
+                "title": entities.get("title") or text,
+                "when_raw": entity_raw or text,
+                "user_id": user_id,
+                **entities # This will include start_iso, end_iso, etc.
             }
         }
         
@@ -225,7 +228,8 @@ def _decide_reminder(text: str, entities: dict, user_id: str, confidence: float)
         "time=" in entity_raw or 
         "in " in text.lower() or  # "remind me in 1 hour"
         "at " in text.lower() or  # "remind me at 5pm"
-        entities.get("time")
+        entities.get("time") or
+        entities.get("start_iso") # Add support for our new ISO format
     )
     
     if has_time_info:
@@ -233,9 +237,10 @@ def _decide_reminder(text: str, entities: dict, user_id: str, confidence: float)
         action = {
             "type": ACTION_CREATE_REMINDER,
             "payload": {
-                "title": text,
+                "title": entities.get("title") or text,
                 "when_raw": entity_raw or text,
-                "user_id": user_id
+                "user_id": user_id,
+                **entities # Pass all extracted entities
             }
         }
         
