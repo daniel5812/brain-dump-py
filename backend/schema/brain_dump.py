@@ -46,8 +46,10 @@ class BrainDumpResponse(BaseModel):
     - message: Human-readable feedback
     - action_taken: What did the server do?
     - status: SUCCESS, NEEDS_CLARIFICATION, FAILED_VALIDATION, or NEEDS_REGISTRATION
+    - registration_url: If status is NEEDS_REGISTRATION, this URL can be used for registration.
     """
     success: bool
     message: str
     action_taken: Optional[str] = None
     status: Optional[str] = "SUCCESS"  # Default to SUCCESS for backward compatibility
+    registration_url: Optional[str] = None

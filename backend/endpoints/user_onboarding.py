@@ -32,6 +32,7 @@ class VerifyUserRequest(BaseModel):
 class VerifyUserResponse(BaseModel):
     status: str
     phone: str = None
+    registration_url: str = None
 
 class RegisterCompleteRequest(BaseModel):
     user_id: str
@@ -68,7 +69,9 @@ async def verify_user_endpoint(request: Request = None, data: VerifyUserRequest 
             phone=user["user_id"] # The phone number is our primary user_id
         )
     
-    return VerifyUserResponse(status="NEEDS_REGISTRATION")
+    # Generate a friendly registration URL for the shortcut to use directly
+    reg_url = f"https://brain-dump-py.onrender.com/register?user_id={device_id}"
+    return VerifyUserResponse(status="NEEDS_REGISTRATION", registration_url=reg_url)
 
 
 @router.get("/register", response_class=HTMLResponse)

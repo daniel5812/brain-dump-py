@@ -98,10 +98,12 @@ async def brain_dump(
     
     if not user_record or not user_record.get("calendar_enabled", False):
         print(f"[endpoint] Device unrecognized or not ready: {final_user_id} -> Asking for registration")
+        reg_url = f"https://brain-dump-py.onrender.com/register?user_id={final_user_id}"
         return BrainDumpResponse(
             success=False,
             message="I need to know who you are to help you. Click below to register.",
             status="NEEDS_REGISTRATION",
+            registration_url=reg_url,
             action_taken=None
         )
     
