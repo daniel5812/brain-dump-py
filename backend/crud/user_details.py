@@ -65,13 +65,36 @@ def register_user(user_data: dict) -> dict:
 
 
 def get_user_by_device(device_id: str) -> Optional[dict]:
-    """Resolve the technical Device ID to a full User (Phone) record."""
+    """
+    Resolve the technical Device ID or Phone Number to a full User record.
+    Built to be robust against Shortcut-side number formatting issues.
+    """
     if not supabase: return None
+    
+    # 1. Standard Lookup: By device_id (The Technical ID)
     try:
         response = supabase.table("users").select("*").eq("device_id", device_id).execute()
-        return response.data[0] if response.data else None
+        if response.data:
+            return response.data[0]
     except:
-        return None
+        pass
+
+    # 2. Smart Lookup: If it looks like a phone number missing a 0
+    # (9 digits starting with '5' is common for Israeli mobiles when treated as an integer)
+    lookup_id = device_id
+    if len(device_id) == 9 and device_id.startswith("5"):
+        lookup_id = "0" + device_id
+        print(f"[user_details] ID '{device_id}' looks like a missing-zero phone. Trying '{lookup_id}'...")
+
+    # 3. Fallback Lookup: By user_id (The Phone Number)
+    try:
+        response = supabase.table("users").select("*").eq("user_id", lookup_id).execute()
+        if response.data:
+            return response.data[0]
+    except:
+        pass
+
+    return None
 
 def get_user(user_id: str) -> Optional[dict]:
     """Retrieve user details by Phone Number."""
