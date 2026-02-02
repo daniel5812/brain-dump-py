@@ -85,6 +85,15 @@ async def brain_dump(
     # Step 1: Resolve Identity (TECHNICAL ID -> PHONE NUMBER)
     from crud.user_details import get_user_by_device
     
+    # SPECIAL DEBUG: If user_id is "0", it means the Shortcut is passing a null 'phone' from a failed verification.
+    if final_user_id == "0":
+        print(f"[endpoint] WARNING: Received user_id='0'. Shortcut is likely passing a null verification result.")
+        return BrainDumpResponse(
+            success=False,
+            message="Shortcut Error: Your ID is '0'. In your Shortcut, make sure to send your Technical ID (like 'Daniel_iPhone'), not the 'phone' result from the verification step if it failed.",
+            status="NEEDS_REGISTRATION"
+        )
+
     user_record = get_user_by_device(final_user_id)
     
     if not user_record or not user_record.get("calendar_enabled", False):
