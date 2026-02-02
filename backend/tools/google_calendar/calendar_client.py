@@ -71,22 +71,45 @@ class CalendarClient:
         Args:
             calendar_id: Usually the user's email
             title: Event title
-            start_iso: Start time in ISO 8601 format (e.g. 2024-05-01T10:00:00Z)
+            start_iso: Start time in ISO 8601 format (e.g. 2024-05-01T10:00:00)
             end_iso: Optional end time. If missing, defaults to 1 hour after start.
             description: Optional description
         """
         try:
-            # If no end time provided, default to 1 hour after start
-            if not end_iso:
-                from datetime import datetime, timedelta
+            from datetime import datetime, timedelta
+            
+            # 1. Normalize start_iso (handle 'Z' or missing offset)
+            # If it already has an offset/Z, use it. If not, treat as naive.
+            try:
+                # This handles strings with or without 'Z'/offset
                 start_dt = datetime.fromisoformat(start_iso.replace('Z', '+00:00'))
-                end_iso = (start_dt + timedelta(hours=1)).isoformat()
+            except ValueError:
+                # If AI returns something slightly non-standard
+                print(f"[CalendarClient] WARNING: Could not parse ISO '{start_iso}'. Using fallback parsing.")
+                start_dt = datetime.now() + timedelta(hours=1) # Safe fallback
 
+            # 2. Handle end_iso
+            if not end_iso:
+                end_dt = start_dt + timedelta(hours=1)
+                end_iso = end_dt.isoformat()
+            else:
+                end_dt = datetime.fromisoformat(end_iso.replace('Z', '+00:00'))
+
+            # 3. Build the event with explicit Timezone (Israel)
+            # Google Calendar API requires either explicit timezone OR offset in the string.
+            # Adding 'timeZone' is the most robust way.
+            tz = "Asia/Jerusalem"
             event = {
                 'summary': title,
                 'description': description,
-                'start': {'dateTime': start_iso},
-                'end': {'dateTime': end_iso},
+                'start': {
+                    'dateTime': start_dt.strftime('%Y-%m-%dT%H:%M:%S'),
+                    'timeZone': tz
+                },
+                'end': {
+                    'dateTime': end_dt.strftime('%Y-%m-%dT%H:%M:%S'),
+                    'timeZone': tz
+                },
             }
 
             print(f"[CalendarClient] Creating event '{title}' for {calendar_id}")
