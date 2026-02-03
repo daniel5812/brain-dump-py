@@ -135,6 +135,16 @@ def brain_dump_flow(text: str, user_id: str) -> dict:
     # STEP 4: RESPOND - Format Response for User
     # =========================================================================
     
+    # SPECIAL HANDLING FOR NOTES (Contract Check)
+    # If intent is 'note', we MUST return the strict JSON format and bypass standard flow
+    if intent_result.get('intent') == 'note':
+        print(f"[brain_dump_flow] Note intent detected. Returning strict JSON contract.")
+        return {
+            "status": "SUCCESS",
+            "intent": "note",
+            "message": decision['feedback']  # Use the formatted text from decision engine
+        }
+    
     # Determine overall success
     # SUCCESS status means we did something successfully
     # Other statuses mean we need user input or something failed

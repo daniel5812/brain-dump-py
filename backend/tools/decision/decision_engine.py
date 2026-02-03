@@ -268,12 +268,17 @@ def _decide_note(text: str, entities: dict, user_id: str, confidence: float) -> 
     Decide what to do for note intent.
     
     Rules:
-    - Always SUCCESS with SAVE_NOTE action
-    - CONTRACT: returns formatted_content and note_type for iPhone
+    - Always SUCCESS
+    - CONTRACT: returns formatted_content ready for Apple Notes
+    - NO side effects, NO validation
     """
+    # Format the note content (this is the ONLY responsibility of the server for notes)
+    # The client (Shortcut) expects: "Text... (DD/MM/YYYY HH:MM)"
     now_str = datetime.now().strftime("%d/%m/%Y %H:%M")
-    formatted_content = f"💡 {text}\n\n({now_str})"
+    formatted_content = f"{text}\n\n({now_str})"
     
+    # We create a stub action just for internal tracking/logging if needed, 
+    # but the REAL payload is the 'feedback' field which brain_dump_flow will use as 'message'.
     action = {
         "type": ACTION_SAVE_NOTE,
         "payload": {
@@ -287,7 +292,8 @@ def _decide_note(text: str, entities: dict, user_id: str, confidence: float) -> 
     return {
         "status": STATUS_SUCCESS,
         "actions": [action],
-        "feedback": f"I'll save this note for you: '{text}' / שמרתי לך את הפתק: '{text}'",
+        # CRITICAL: This feedback string IS the message payload for the shortcut
+        "feedback": formatted_content,
         "debug": {"intent": "note", "confidence": confidence}
     }
 
