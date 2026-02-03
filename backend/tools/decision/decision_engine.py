@@ -37,6 +37,9 @@ SAVE_NOTE             - Save note/idea
 """
 
 
+from datetime import datetime
+
+
 # Status codes
 STATUS_SUCCESS = "SUCCESS"
 STATUS_NEEDS_CLARIFICATION = "NEEDS_CLARIFICATION"
@@ -265,13 +268,19 @@ def _decide_note(text: str, entities: dict, user_id: str, confidence: float) -> 
     Decide what to do for note intent.
     
     Rules:
-    - Always SUCCESS with SAVE_NOTE action (notes don't need validation)
+    - Always SUCCESS with SAVE_NOTE action
+    - CONTRACT: returns formatted_content and note_type for iPhone
     """
+    now_str = datetime.now().strftime("%d/%m/%Y %H:%M")
+    formatted_content = f"💡 {text}\n\n({now_str})"
+    
     action = {
         "type": ACTION_SAVE_NOTE,
         "payload": {
             "content": text,
-            "user_id": user_id
+            "user_id": user_id,
+            "note_type": "IDEAS",
+            "formatted_content": formatted_content
         }
     }
     

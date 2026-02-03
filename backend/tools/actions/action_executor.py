@@ -220,11 +220,11 @@ def _execute_save_note(payload: dict, user_id: str) -> dict:
     Notes are currently non-blocking and not saved to Supabase yet.
     """
     content = payload.get("content", "Empty note")
-    print(f"[action_executor] STUB: User {user_id} wants to save note: '{content}'")
+    print(f"[action_executor] STUB: SAVE_NOTE requested for {user_id}: '{content}'")
     
     return {
         "ok": True,
         "type": "SAVE_NOTE",
-        "details": f"STUB: Note logged for {user_id}",
+        "details": f"STUB: SAVE_NOTE logged for {user_id}",
         "payload": payload
     }

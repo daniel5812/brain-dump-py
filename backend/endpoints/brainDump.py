@@ -126,5 +126,6 @@ async def brain_dump(
         success=result["success"],
         message=result["message"],
         action_taken=result.get("action_taken"),
-        status=result.get("status", "SUCCESS")
+        status=result.get("status", "SUCCESS"),
+        actions=result.get("debug", {}).get("execution_results")
     )

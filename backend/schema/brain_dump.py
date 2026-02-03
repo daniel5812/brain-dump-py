@@ -53,3 +53,4 @@ class BrainDumpResponse(BaseModel):
     action_taken: Optional[str] = None
     status: Optional[str] = "SUCCESS"  # Default to SUCCESS for backward compatibility
     registration_url: Optional[str] = None
+    actions: Optional[list] = None  # Structured action results (type, payload, etc.)
