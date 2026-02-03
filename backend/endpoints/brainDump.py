@@ -122,9 +122,17 @@ async def brain_dump(
         user_id=real_user_id
     )
     
+    # SPECIAL HANDLING FOR NOTES (Contract Check)
+    # The notes contract requires a STRICT format without the 'success' field or others.
+    # We must bypass the standard BrainDumpResponse model.
+    if result.get("intent") == "note":
+        from fastapi.responses import JSONResponse
+        return JSONResponse(content=result)
+    
+    # Standard response for all other flows
     return BrainDumpResponse(
-        success=result["success"],
-        message=result["message"],
+        success=result.get("success", False), # Default to False if missing
+        message=result.get("message", ""),
         action_taken=result.get("action_taken"),
         status=result.get("status", "SUCCESS"),
         actions=result.get("debug", {}).get("execution_results")
