@@ -222,43 +222,62 @@ def _decide_reminder(text: str, entities: dict, user_id: str, confidence: float)
     Decide what to do for reminder intent.
     
     Rules:
-    - If entities contain time → SUCCESS with CREATE_REMINDER action
+    - If entities contain time → SUCCESS with reminder details
     - If missing time → NEEDS_CLARIFICATION asking when
+    
+    CONTRACT for Shortcut:
+    - reminder_title: The reminder text/title
+    - reminder_time: ISO 8601 datetime string (or None if missing)
+    - clarification_for: What info is missing (only when NEEDS_CLARIFICATION)
     """
+    # Extract the reminder title (what to remind about)
+    reminder_title = entities.get("title") or entities.get("task") or text
+    
     # Check if we have time information
     entity_raw = entities.get("raw", "").lower()
+    start_iso = entities.get("start_iso")  # ISO format from agent
+    
     has_time_info = (
+        start_iso or
         "time=" in entity_raw or 
         "in " in text.lower() or  # "remind me in 1 hour"
         "at " in text.lower() or  # "remind me at 5pm"
-        entities.get("time") or
-        entities.get("start_iso") # Add support for our new ISO format
+        entities.get("time")
     )
     
     if has_time_info:
-        # SUCCESS
+        # SUCCESS - we have time info
         action = {
             "type": ACTION_CREATE_REMINDER,
             "payload": {
-                "title": entities.get("title") or text,
+                "title": reminder_title,
                 "when_raw": entity_raw or text,
                 "user_id": user_id,
-                **entities # Pass all extracted entities
+                **entities
             }
         }
+        
+        # Format feedback message
+        time_display = start_iso or entities.get("time") or entity_raw
+        feedback_msg = f"תזכורת נקבעה: '{reminder_title}'"
         
         return {
             "status": STATUS_SUCCESS,
             "actions": [action],
-            "feedback": f"I'll remind you: '{text}' / אזכיר לך: '{text}'",
+            "feedback": feedback_msg,
+            "reminder_title": reminder_title,
+            "reminder_time": start_iso,  # ISO 8601 format for Shortcut
             "debug": {"intent": "reminder", "confidence": confidence}
         }
     else:
-        # NEEDS_CLARIFICATION
+        # NEEDS_CLARIFICATION - missing time
         return {
             "status": STATUS_NEEDS_CLARIFICATION,
             "actions": [],
-            "feedback": f"I understand you want a reminder about '{text}', but when should I remind you? / הבנתי שאתה רוצה תזכורת לגבי '{text}', אבל מתי להזכיר לך?",
+            "feedback": f"מתי להזכיר לך על '{reminder_title}'?",
+            "reminder_title": reminder_title,
+            "reminder_time": None,
+            "clarification_for": "time",
             "debug": {"intent": "reminder", "confidence": confidence, "reason": "missing_time"}
         }
 

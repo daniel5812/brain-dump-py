@@ -145,6 +145,30 @@ def brain_dump_flow(text: str, user_id: str) -> dict:
             "message": decision['feedback']  # Use the formatted text from decision engine
         }
     
+    # SPECIAL HANDLING FOR REMINDERS (Contract Check)
+    # Similar to notes - return strict JSON format for the Shortcut to process
+    if intent_result.get('intent') == 'reminder':
+        print(f"[brain_dump_flow] Reminder intent detected. Returning strict JSON contract.")
+        
+        # Format reminder_time like notes: (HH:MM DD/MM/YYYY)
+        reminder_time_formatted = None
+        if decision.get('reminder_time'):
+            from datetime import datetime
+            try:
+                dt = datetime.fromisoformat(decision['reminder_time'])
+                reminder_time_formatted = dt.strftime("(%H:%M %d/%m/%Y)")
+            except:
+                reminder_time_formatted = decision['reminder_time']
+        
+        return {
+            "status": decision['status'],  # SUCCESS or NEEDS_CLARIFICATION
+            "intent": "reminder",
+            "message": decision['feedback'],
+            "reminder_title": decision.get('reminder_title'),
+            "reminder_time": reminder_time_formatted,  # Formatted like (19:17 05/02/2026)
+            "clarification_for": decision.get('clarification_for')  # "time" when missing
+        }
+    
     # Determine overall success
     # SUCCESS status means we did something successfully
     # Other statuses mean we need user input or something failed
