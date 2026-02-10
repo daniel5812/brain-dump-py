@@ -50,6 +50,7 @@ STATUS_SYSTEM_ERROR = "SYSTEM_ERROR"
 ACTION_CREATE_TASK = "CREATE_TASK"
 ACTION_CREATE_EVENT = "CREATE_EVENT"
 ACTION_CREATE_REMINDER = "CREATE_REMINDER"
+ACTION_CREATE_ALARM = "CREATE_ALARM"
 ACTION_SAVE_NOTE = "SAVE_NOTE"
 
 
@@ -105,6 +106,8 @@ def decide(intent_result: dict, user_id: str) -> dict:
             return _decide_event(original_text, entities, user_id, confidence)
         elif intent == "reminder":
             return _decide_reminder(original_text, entities, user_id, confidence)
+        elif intent == "alarm":
+            return _decide_alarm(original_text, entities, user_id, confidence)
         elif intent == "note":
             return _decide_note(original_text, entities, user_id, confidence)
         elif intent == "question":
@@ -311,6 +314,91 @@ def _decide_reminder(text: str, entities: dict, user_id: str, confidence: float)
             "reminder_date": None,
             "clarification_for": "time",
             "debug": {"intent": "reminder", "confidence": confidence, "reason": "missing_time"}
+        }
+
+
+def _decide_alarm(text: str, entities: dict, user_id: str, confidence: float) -> dict:
+    """
+    Decide what to do for alarm intent.
+    
+    Rules:
+    - If time is present → SUCCESS with alarm details
+    - If missing time → NEEDS_CLARIFICATION asking when
+    
+    CONTRACT for Shortcut:
+    - alarm_iso: Full ISO 8601 datetime string for the alarm
+    - alarm_label: Optional label/reason for the alarm (empty string if none)
+    """
+    # Extract the alarm label (reason/description)
+    alarm_label = entities.get("label") or entities.get("title") or ""
+    
+    # Check if we have time information
+    start_iso = entities.get("start_iso")
+    
+    if start_iso:
+        # SUCCESS - we have time info
+        alarm_iso = None
+        try:
+            from datetime import datetime
+            dt = datetime.fromisoformat(start_iso)
+            alarm_iso = dt.strftime("%Y-%m-%dT%H:%M:%S")
+        except:
+            pass
+        
+        if not alarm_iso:
+            return {
+                "status": STATUS_NEEDS_CLARIFICATION,
+                "actions": [],
+                "feedback": "לא הצלחתי לפענח את השעה. מתי לקבוע את השעון מעורר?",
+                "alarm_label": alarm_label,
+                "alarm_iso": None,
+                "clarification_for": "time",
+                "debug": {"intent": "alarm", "confidence": confidence, "reason": "invalid_time"}
+            }
+        
+        # Format feedback
+        try:
+            from datetime import datetime
+            dt = datetime.fromisoformat(alarm_iso)
+            time_str = dt.strftime("%H:%M")
+            date_str = dt.strftime("%Y-%m-%d")
+            feedback_msg = f"שעון מעורר נקבע ל-{time_str}"
+            # Only mention date if it's not today
+            today = datetime.now().strftime("%Y-%m-%d")
+            if date_str != today:
+                feedback_msg += f" ({date_str})"
+            if alarm_label:
+                feedback_msg += f" — {alarm_label}"
+        except:
+            feedback_msg = f"שעון מעורר נקבע ({alarm_iso})"
+        
+        action = {
+            "type": ACTION_CREATE_ALARM,
+            "payload": {
+                "alarm_iso": alarm_iso,
+                "label": alarm_label,
+                "user_id": user_id
+            }
+        }
+        
+        return {
+            "status": STATUS_SUCCESS,
+            "actions": [action],
+            "feedback": feedback_msg,
+            "alarm_iso": alarm_iso,
+            "alarm_label": alarm_label,
+            "debug": {"intent": "alarm", "confidence": confidence}
+        }
+    else:
+        # NEEDS_CLARIFICATION - missing time
+        return {
+            "status": STATUS_NEEDS_CLARIFICATION,
+            "actions": [],
+            "feedback": "מתי לקבוע את השעון מעורר?",
+            "alarm_label": alarm_label,
+            "alarm_iso": None,
+            "clarification_for": "time",
+            "debug": {"intent": "alarm", "confidence": confidence, "reason": "missing_time"}
         }
 
 

@@ -53,6 +53,7 @@ VALID_INTENTS = {
     "task",      # User wants to add a todo/task (e.g., "add milk to shopping list")
     "event",     # User wants to create a calendar event (e.g., "schedule meeting tomorrow")
     "reminder",  # User wants to set a reminder (e.g., "remind me to call mom")
+    "alarm",     # User wants to set an alarm (e.g., "set alarm in 17 minutes", "wake me up at 7")
     "note",      # User wants to save a note/idea (e.g., "note: great idea for the project")
     "question",  # User is asking a question (e.g., "what's the weather?")
     "unknown"    # Cannot determine intent (fallback)
@@ -164,7 +165,8 @@ def _build_prompt(text: str) -> str:
 Intents:
 - task: User wants to add a todo/task (e.g., "add milk to list", "buy groceries", "remember to call")
 - event: User wants to create a calendar event (e.g., "schedule meeting tomorrow", "set appointment")
-- reminder: User wants to set a time-based reminder (e.g., "remind me in 1 hour", "alert me at 5pm")
+- reminder: User wants to set a reminder about something (e.g., "remind me to call mom", "תזכיר לי לאסוף את המשלוח")
+- alarm: User explicitly wants to set an ALARM / clock alarm (e.g., "שעון מעורר", "תעיר אותי", "set alarm", "אלארם"). Use this ONLY when the user explicitly says alarm/שעון מעורר/תעיר אותי.
 - note: User wants to save a note/idea (e.g., "note: great idea", "save this thought")
 - question: User is asking a question (e.g., "what's the weather?", "how do I...?")
 - unknown: Cannot determine clear intent
@@ -178,6 +180,7 @@ Intent: <one of the above intents>
 Confidence: <number between 0.0 and 1.0>
 Entities: <extracted info: key="value", key="value">
 - For 'event' or 'reminder': ONLY include start_iso (ISO 8601 format) and end_iso if the user EXPLICITLY mentions a date or time. If the user does NOT mention when, do NOT invent or guess a time — leave start_iso and end_iso out entirely.
+- For 'alarm': include start_iso (ISO 8601 format) for the alarm time, and label (the reason/description, if mentioned). If no label is given, set label="".
 - For 'task', include title and priority.
 
 Example response:

@@ -159,6 +159,19 @@ def brain_dump_flow(text: str, user_id: str) -> dict:
             "clarification_for": decision.get('clarification_for')  # "time" when missing
         }
     
+    # SPECIAL HANDLING FOR ALARMS (Contract Check)
+    if intent_result.get('intent') == 'alarm':
+        print(f"[brain_dump_flow] Alarm intent detected. Returning strict JSON contract.")
+        
+        return {
+            "status": decision['status'],  # SUCCESS or NEEDS_CLARIFICATION
+            "intent": "alarm",
+            "message": decision['feedback'],
+            "alarm_iso": decision.get('alarm_iso'),         # Full ISO 8601: "2026-02-10T22:17:00"
+            "alarm_label": decision.get('alarm_label', ''), # Label or empty string
+            "clarification_for": decision.get('clarification_for')
+        }
+    
     # Determine overall success
     # SUCCESS status means we did something successfully
     # Other statuses mean we need user input or something failed
