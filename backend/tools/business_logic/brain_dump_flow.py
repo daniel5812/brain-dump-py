@@ -155,8 +155,7 @@ def brain_dump_flow(text: str, user_id: str) -> dict:
             "intent": "reminder",
             "message": decision['feedback'],
             "reminder_title": decision.get('reminder_title'),
-            "reminder_time": decision.get('reminder_time'),   # HH:MM format (e.g., "17:00")
-            "reminder_date": decision.get('reminder_date'),   # YYYY-MM-DD format (e.g., "2026-02-06")
+            "reminder_iso": decision.get('reminder_iso'),       # Full ISO 8601: "2026-02-10T16:00:00"
             "clarification_for": decision.get('clarification_for')  # "time" when missing
         }
     

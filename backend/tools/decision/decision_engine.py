@@ -225,14 +225,14 @@ def _decide_reminder(text: str, entities: dict, user_id: str, confidence: float)
     - If entities contain time → SUCCESS with reminder details
     - If missing time → NEEDS_CLARIFICATION asking when
     
-    CONTRACT for Shortcut (separate fields for compatibility):
+    CONTRACT for Shortcut:
     - reminder_title: The reminder text/title
-    - reminder_time: Time in HH:MM format (24H) - e.g., "17:00"
-    - reminder_date: Date in YYYY-MM-DD format - e.g., "2026-02-06"
+    - reminder_iso: Full ISO 8601 datetime string (e.g., "2026-02-06T17:00:00")
+      Apple Shortcuts can parse this directly into a Date object for the alert field.
     - clarification_for: What info is missing (only when NEEDS_CLARIFICATION)
     """
     # Extract the reminder title (what to remind about)
-    reminder_title = entities.get("title") or entities.get("task") or text
+    reminder_title = entities.get("title") or entities.get("reminder") or entities.get("task") or text
     
     # Check if we have time information
     entity_raw = entities.get("raw", "").lower()
@@ -251,27 +251,26 @@ def _decide_reminder(text: str, entities: dict, user_id: str, confidence: float)
     
     if has_time_info:
         # SUCCESS - we have time info
-        # Parse time and date from available data
-        reminder_time = None
-        reminder_date = None
+        # Build a full ISO 8601 datetime string for the Shortcut
+        reminder_iso = None
         
         if start_iso:
-            # Parse ISO format: "2026-02-06T17:00:00"
+            # Validate and normalize ISO format: "2026-02-06T17:00:00"
             try:
                 from datetime import datetime
                 dt = datetime.fromisoformat(start_iso)
-                reminder_time = dt.strftime("%H:%M")
-                reminder_date = dt.strftime("%Y-%m-%d")
+                reminder_iso = dt.strftime("%Y-%m-%dT%H:%M:%S")
             except:
                 pass
         
-        if not reminder_time and time_only:
-            # Use time directly if provided
-            reminder_time = time_only
-            # Default to today if no date
-            if not reminder_date:
+        if not reminder_iso and time_only:
+            # Build ISO from time_only + today's date
+            try:
                 from datetime import datetime
-                reminder_date = datetime.now().strftime("%Y-%m-%d")
+                today = datetime.now().strftime("%Y-%m-%d")
+                reminder_iso = f"{today}T{time_only}:00"
+            except:
+                pass
         
         action = {
             "type": ACTION_CREATE_REMINDER,
@@ -283,20 +282,22 @@ def _decide_reminder(text: str, entities: dict, user_id: str, confidence: float)
             }
         }
         
-        # Format feedback message
+        # Format feedback message (human-readable)
         feedback_msg = f"תזכורת נקבעה: '{reminder_title}'"
-        if reminder_time:
-            feedback_msg += f" ב-{reminder_time}"
-        if reminder_date:
-            feedback_msg += f" ({reminder_date})"
+        if reminder_iso:
+            try:
+                from datetime import datetime
+                dt = datetime.fromisoformat(reminder_iso)
+                feedback_msg += f" ב-{dt.strftime('%H:%M')} ({dt.strftime('%Y-%m-%d')})"
+            except:
+                feedback_msg += f" ({reminder_iso})"
         
         return {
             "status": STATUS_SUCCESS,
             "actions": [action],
             "feedback": feedback_msg,
             "reminder_title": reminder_title,
-            "reminder_time": reminder_time,  # HH:MM format
-            "reminder_date": reminder_date,  # YYYY-MM-DD format
+            "reminder_iso": reminder_iso,  # Full ISO 8601: "2026-02-10T16:00:00"
             "debug": {"intent": "reminder", "confidence": confidence}
         }
     else:
