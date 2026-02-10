@@ -129,6 +129,13 @@ async def brain_dump(
         from fastapi.responses import JSONResponse
         return JSONResponse(content=result)
     
+    # SPECIAL HANDLING FOR REMINDERS (Contract Check)
+    # The reminder contract returns intent-specific fields (reminder_title, reminder_time, etc.)
+    # that BrainDumpResponse does not have. We must bypass it, same as notes.
+    if result.get("intent") == "reminder":
+        from fastapi.responses import JSONResponse
+        return JSONResponse(content=result)
+    
     # Standard response for all other flows
     return BrainDumpResponse(
         success=result.get("success", False), # Default to False if missing

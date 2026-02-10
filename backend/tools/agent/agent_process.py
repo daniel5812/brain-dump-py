@@ -177,7 +177,7 @@ Respond in this EXACT format:
 Intent: <one of the above intents>
 Confidence: <number between 0.0 and 1.0>
 Entities: <extracted info: key="value", key="value">
-- For 'event' or 'reminder', include start_iso (ISO 8601 format) and end_iso (if identifiable).
+- For 'event' or 'reminder': ONLY include start_iso (ISO 8601 format) and end_iso if the user EXPLICITLY mentions a date or time. If the user does NOT mention when, do NOT invent or guess a time — leave start_iso and end_iso out entirely.
 - For 'task', include title and priority.
 
 Example response:
