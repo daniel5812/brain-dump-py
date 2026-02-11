@@ -172,6 +172,18 @@ def brain_dump_flow(text: str, user_id: str) -> dict:
             "clarification_for": decision.get('clarification_for')
         }
     
+    # SPECIAL HANDLING FOR SHOPPING (Contract Check)
+    if intent_result.get('intent') == 'shopping':
+        print(f"[brain_dump_flow] Shopping intent detected. Returning strict JSON contract.")
+        
+        return {
+            "status": decision['status'],  # SUCCESS or NEEDS_CLARIFICATION
+            "intent": "shopping",
+            "message": decision['feedback'],
+            "items": decision.get('items', []),              # List of items: ["חלב", "ביצים", "לחם"]
+            "clarification_for": decision.get('clarification_for')
+        }
+    
     # Determine overall success
     # SUCCESS status means we did something successfully
     # Other statuses mean we need user input or something failed

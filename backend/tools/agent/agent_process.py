@@ -50,11 +50,11 @@ from typing import Optional, Dict
 
 # Intent categories - closed set, do not add without architectural review
 VALID_INTENTS = {
-    "task",      # User wants to add a todo/task (e.g., "add milk to shopping list")
     "event",     # User wants to create a calendar event (e.g., "schedule meeting tomorrow")
-    "reminder",  # User wants to set a reminder (e.g., "remind me to call mom")
+    "reminder",  # User wants to set a reminder or task (e.g., "remind me to call mom", "I need to fix the tap")
     "alarm",     # User wants to set an alarm (e.g., "set alarm in 17 minutes", "wake me up at 7")
     "note",      # User wants to save a note/idea (e.g., "note: great idea for the project")
+    "shopping",  # User wants to add items to shopping list (e.g., "add milk and eggs to shopping list")
     "question",  # User is asking a question (e.g., "what's the weather?")
     "unknown"    # Cannot determine intent (fallback)
 }
@@ -163,11 +163,11 @@ def _build_prompt(text: str) -> str:
     return f"""Classify the following user message into ONE of these intents:
 
 Intents:
-- task: User wants to add a todo/task (e.g., "add milk to list", "buy groceries", "remember to call")
 - event: User wants to create a calendar event (e.g., "schedule meeting tomorrow", "set appointment")
-- reminder: User wants to set a reminder about something (e.g., "remind me to call mom", "תזכיר לי לאסוף את המשלוח")
+- reminder: User wants to set a reminder OR a task — anything the user wants to remember or do, with or without a specific time (e.g., "remind me to call mom", "תזכיר לי לאסוף את המשלוח", "I need to fix the tap", "צריך לחדש ביטוח")
 - alarm: User explicitly wants to set an ALARM / clock alarm (e.g., "שעון מעורר", "תעיר אותי", "set alarm", "אלארם"). Use this ONLY when the user explicitly says alarm/שעון מעורר/תעיר אותי.
-- note: User wants to save a note/idea (e.g., "note: great idea", "save this thought")
+- note: User wants to save a note/idea (e.g., "note: great idea", "save this thought", "תרשום לי")
+- shopping: User wants to add items to a SHOPPING/GROCERY list (e.g., "תוסיף חלב לרשימת קניות", "add milk and eggs", "צריך לקנות ביצים ולחם")
 - question: User is asking a question (e.g., "what's the weather?", "how do I...?")
 - unknown: Cannot determine clear intent
 
@@ -181,12 +181,16 @@ Confidence: <number between 0.0 and 1.0>
 Entities: <extracted info: key="value", key="value">
 - For 'event' or 'reminder': ONLY include start_iso (ISO 8601 format) and end_iso if the user EXPLICITLY mentions a date or time. If the user does NOT mention when, do NOT invent or guess a time — leave start_iso and end_iso out entirely.
 - For 'alarm': include start_iso (ISO 8601 format) for the alarm time, and label (the reason/description, if mentioned). If no label is given, set label="".
-- For 'task', include title and priority.
+- For 'shopping': include items as a comma-separated list of individual items. Example: items="חלב, ביצים, לחם"
 
-Example response:
+Example responses:
 Intent: event
 Confidence: 0.98
 Entities: title="Meeting with Boss", start_iso="2026-01-26T09:00:00", end_iso="2026-01-26T10:00:00"
+
+Intent: shopping
+Confidence: 0.95
+Entities: items="חלב, ביצים, לחם"
 """
 
 

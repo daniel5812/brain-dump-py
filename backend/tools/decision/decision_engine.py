@@ -47,11 +47,11 @@ STATUS_FAILED_VALIDATION = "FAILED_VALIDATION"
 STATUS_SYSTEM_ERROR = "SYSTEM_ERROR"
 
 # Action types
-ACTION_CREATE_TASK = "CREATE_TASK"
 ACTION_CREATE_EVENT = "CREATE_EVENT"
 ACTION_CREATE_REMINDER = "CREATE_REMINDER"
 ACTION_CREATE_ALARM = "CREATE_ALARM"
 ACTION_SAVE_NOTE = "SAVE_NOTE"
+ACTION_ADD_SHOPPING = "ADD_SHOPPING"
 
 
 def decide(intent_result: dict, user_id: str) -> dict:
@@ -101,7 +101,8 @@ def decide(intent_result: dict, user_id: str) -> dict:
         
         # Route to specific intent handler
         if intent == "task":
-            return _decide_task(original_text, entities, user_id, confidence)
+            # Task is treated as a reminder (no time)
+            return _decide_reminder(original_text, entities, user_id, confidence)
         elif intent == "event":
             return _decide_event(original_text, entities, user_id, confidence)
         elif intent == "reminder":
@@ -110,6 +111,8 @@ def decide(intent_result: dict, user_id: str) -> dict:
             return _decide_alarm(original_text, entities, user_id, confidence)
         elif intent == "note":
             return _decide_note(original_text, entities, user_id, confidence)
+        elif intent == "shopping":
+            return _decide_shopping(original_text, entities, user_id, confidence)
         elif intent == "question":
             return _decide_question(original_text, entities, user_id, confidence)
         else:  # unknown
@@ -399,6 +402,61 @@ def _decide_alarm(text: str, entities: dict, user_id: str, confidence: float) ->
             "alarm_iso": None,
             "clarification_for": "time",
             "debug": {"intent": "alarm", "confidence": confidence, "reason": "missing_time"}
+        }
+
+
+def _decide_shopping(text: str, entities: dict, user_id: str, confidence: float) -> dict:
+    """
+    Decide what to do for shopping intent.
+    
+    Rules:
+    - Extract items from entities or text
+    - Always SUCCESS if items found
+    - NEEDS_CLARIFICATION if no items detected
+    
+    CONTRACT for Shortcut:
+    - items: List of individual shopping items
+    - The Shortcut creates/appends to a note called "🛒 רשימת קניות"
+    - Each item becomes a checklist line in Apple Notes
+    """
+    # Extract items from entities
+    items_raw = entities.get("items", "")
+    
+    if items_raw:
+        # Parse comma-separated items: "חלב, ביצים, לחם"
+        items = [item.strip() for item in items_raw.split(",") if item.strip()]
+    else:
+        # Try to extract from text directly (fallback)
+        items = []
+    
+    if items:
+        action = {
+            "type": ACTION_ADD_SHOPPING,
+            "payload": {
+                "items": items,
+                "user_id": user_id
+            }
+        }
+        
+        items_display = ", ".join(items)
+        feedback_msg = f"נוסף לרשימת קניות: {items_display}"
+        
+        return {
+            "status": STATUS_SUCCESS,
+            "actions": [action],
+            "feedback": feedback_msg,
+            "items": items,
+            "debug": {"intent": "shopping", "confidence": confidence}
+        }
+    else:
+        # No items detected
+        return {
+            "status": STATUS_NEEDS_CLARIFICATION,
+            "actions": [],
+            "feedback": "מה להוסיף לרשימת הקניות?",
+            "items": [],
+            "clarification_for": "items",
+            "debug": {"intent": "shopping", "confidence": confidence, "reason": "missing_items"}
         }
 
 

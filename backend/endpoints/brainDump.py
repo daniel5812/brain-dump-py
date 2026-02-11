@@ -142,6 +142,12 @@ async def brain_dump(
         from fastapi.responses import JSONResponse
         return JSONResponse(content=result)
     
+    # SPECIAL HANDLING FOR SHOPPING (Contract Check)
+    # The shopping contract returns items list.
+    if result.get("intent") == "shopping":
+        from fastapi.responses import JSONResponse
+        return JSONResponse(content=result)
+    
     # Standard response for all other flows
     return BrainDumpResponse(
         success=result.get("success", False), # Default to False if missing
